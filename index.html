@@ -41,42 +41,51 @@
         .input-group { margin-bottom: 22px; }
         label { display: block; font-size: 14px; color: var(--gold); margin-bottom: 10px; font-weight: 600; }
 
-        /* עיצוב תיבות הקלט - טקסט לבן וברור */
+        /* עיצוב תיבות הקלט */
         input, select {
             width: 100%; padding: 16px;
             background: #2a2a2a; 
             border: 1px solid #444; border-radius: 15px;
-            color: #ffffff !important; /* טקסט לבן במקום שחור */
-            font-size: 20px; outline: none;
+            color: #ffffff !important; /* טקסט לבן */
+            font-size: 22px; outline: none;
             transition: all 0.3s ease; box-sizing: border-box;
             appearance: none; -webkit-appearance: none;
             text-align: center;
+            font-weight: bold;
         }
 
-        /* הסתרת חיצי דפדפן מקוריים */
-        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        /* כפתורי זהב בולטים למשקל */
+        .controls-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
 
-        /* כפתורי שליטה זהובים למשקל */
-        .controls-container { display: flex; align-items: center; gap: 10px; }
         .step-btn {
-            background: #1a1a1a;
-            border: 1px solid var(--gold);
-            color: var(--gold);
-            width: 55px; height: 55px;
+            background: var(--gold); /* כפתור זהב מלא */
+            border: none;
+            color: #000000; /* טקסט שחור לניגודיות */
+            width: 60px; height: 60px; /* כפתורים גדולים */
             border-radius: 15px;
-            font-size: 28px;
+            font-size: 30px;
+            font-weight: bold;
             cursor: pointer;
             display: flex; align-items: center; justify-content: center;
-            transition: 0.2s;
+            transition: transform 0.1s;
+            box-shadow: 0 4px 10px rgba(212, 175, 55, 0.3);
         }
-        .step-btn:active { background: var(--gold); color: black; }
 
-        /* חץ זהב מעוצב לתיבת הקראט */
+        .step-btn:active { transform: scale(0.95); background: var(--gold-bright); }
+
+        /* הסתרת חיצי דפדפן */
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+        /* חץ זהב לתיבת הקראט */
         .select-wrapper { position: relative; width: 100%; }
         .select-wrapper::after {
             content: '▼';
-            font-size: 12px; color: var(--gold);
-            position: absolute; left: 15px; top: 50%;
+            font-size: 14px; color: var(--gold);
+            position: absolute; left: 20px; top: 50%;
             transform: translateY(-50%); pointer-events: none;
         }
 
@@ -153,26 +162,33 @@
             </div>
         </div>
         
-        <div id="status" class="status-bar">מתחבר לנתונים חיים...</div>
+        <div id="status" class="status-bar">מתחבר ל-API (ללא ערכים שמורים)...</div>
     </div>
 
     <div class="footer">© GOLDSILVER GLOBAL LTD</div>
 
 <script>
+    // אתחול ל-0 מוחלט, ללא שום מספר שמור מראש!
     let market = { ozUSD: 0, rateILS: 0 };
 
-    // פונקציית שליטה במשקל (קפיצות של 1, מינימום 0)
+    // פונקציה לשינוי משקל בכפתורי הזהב
     function changeWeight(amount) {
         const weightInput = document.getElementById('weight');
         let current = parseFloat(weightInput.value || 0);
+        
+        // הוספה או הפחתה של 1 בדיוק
         let updated = current + amount;
+        
+        // מניעת ירידה מתחת לאפס
         if (updated < 0) updated = 0;
+        
         weightInput.value = updated.toFixed(2);
         calculate();
     }
 
     async function updateData() {
         try {
+            // משיכה מה-API בלבד
             const [goldRes, rateRes] = await Promise.all([
                 fetch('https://api.coingecko.com/api/v3/simple/price?ids=pax-gold&vs_currencies=usd'),
                 fetch('https://api.frankfurter.app/latest?from=USD&to=ILS')
@@ -180,20 +196,24 @@
             const goldData = await goldRes.json();
             const rateData = await rateRes.json();
 
-            // נתוני ינואר 2026: מחיר אונקיה $5040.73, שער דולר 3.1360
+            // עדכון רק אם ה-API החזיר תשובה אמתית
             if (goldData['pax-gold'] && rateData.rates.ILS) {
                 market.ozUSD = goldData['pax-gold'].usd;
                 market.rateILS = rateData.rates.ILS;
-                document.getElementById('status').innerText = "בורסה מעודכנת ✅ " + new Date().toLocaleTimeString();
+                document.getElementById('status').innerText = "נתונים התקבלו מה-API בהצלחה ✅";
                 calculate();
+            } else {
+                document.getElementById('status').innerText = "ממתין לנתוני API...";
             }
         } catch (e) {
-            document.getElementById('status').innerText = "שגיאת חיבור לבורסה.";
+            document.getElementById('status').innerText = "שגיאת תקשורת עם ה-API.";
         }
     }
 
     function calculate() {
+        // אם אין נתונים מה-API, לא מציגים כלום (נשאר --)
         if (market.ozUSD === 0 || market.rateILS === 0) return;
+        
         const weight = parseFloat(document.getElementById('weight').value) || 0;
         const purity = parseFloat(document.getElementById('purity').value);
         
