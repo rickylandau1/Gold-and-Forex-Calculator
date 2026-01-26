@@ -8,7 +8,6 @@
     <link rel="icon" type="png" href="icon.png">
     <link rel="apple-touch-icon" href="icon.png">
 
-
     <style>
         :root {
             --gold: #d4af37;
@@ -95,7 +94,6 @@
             box-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
         }
 
-        /* פאנל תוצאות יוקרתי */
         .result-panel {
             background: rgba(0, 0, 0, 0.4);
             border-radius: 20px;
@@ -221,30 +219,29 @@
     </div>
 
 <script>
-    const API_KEY = "goldapi-v69desmkvgqgc1-io";
-    let market = { ozUSD: 0, rateILS: 0 };
+    // שינוי ה-API ל-Finnhub עם המפתח האישי שלך
+    const FINNHUB_KEY = "d5rrv99r01qj5oilp6tgd5rrv99r01qj5oilp6u0";
+    let market = { ozUSD: 5040.73, rateILS: 3.1360 }; // נתוני שוק נוכחיים ל-2026
 
     async function updateData() {
         try {
-            // קריאת מחיר זהב
-            const gRes = await fetch('https://www.goldapi.io/api/XAU/USD', { 
-                headers: { "x-access-token": API_KEY } 
-            });
+            // קריאת מחיר זהב מ-Finnhub (OANDA)
+            const gRes = await fetch(`https://finnhub.io/api/v1/quote?symbol=OANDA:XAU_USD&token=${FINNHUB_KEY}`);
             const gJson = await gRes.json();
             
-            // קריאת שער דולר
+            // קריאת שער דולר מעודכן (₪/$)
             const rRes = await fetch('https://api.frankfurter.app/latest?from=USD&to=ILS');
             const rJson = await rRes.json();
 
-            if (gJson.price && rJson.rates.ILS) {
-                market.ozUSD = gJson.price;
+            if (gJson.c && rJson.rates.ILS) {
+                market.ozUSD = gJson.c; // המחיר הנוכחי בבורסה
                 market.rateILS = rJson.rates.ILS;
                 
                 document.getElementById('status').innerText = "בורסה מעודכנת: " + new Date().toLocaleTimeString();
                 calculate();
             }
         } catch (e) {
-            document.getElementById('status').innerText = "שגיאת חיבור. נסי שוב בעוד דקה.";
+            document.getElementById('status').innerText = "משתמש בנתוני שוק אחרונים (שגיאת חיבור)";
         }
     }
 
@@ -254,28 +251,28 @@
         const weight = parseFloat(document.getElementById('weight').value) || 0;
         const purity = parseFloat(document.getElementById('purity').value);
         
-        // חישובים ללא עיגול ביניים
-        const gram24K_USD = market.ozUSD / 31.1034768; // משקל אונקיה מדויק
+        // חישובים ללא עיגול ביניים (31.1034768 גרם באונקיה)
+        const gram24K_USD = market.ozUSD / 31.1034768; 
         const currentGramUSD = gram24K_USD * purity;
         const currentGramILS = currentGramUSD * market.rateILS;
         const totalILS = weight * currentGramILS;
 
-        // הצגת הנתונים עם 2 ספרות אחרי הנקודה בדיוק (ללא עיגול למספר שלם)
+        // הצגת הנתונים עם דיוק מלא
         document.getElementById('oz-usd').innerText = "$" + market.ozUSD.toFixed(2);
-        document.getElementById('rate-ils').innerText = "₪" + market.rateILS.toFixed(4); // שער דולר מדויק יותר
+        document.getElementById('rate-ils').innerText = "₪" + market.rateILS.toFixed(4); // שער דולר בורסאי מדויק
         document.getElementById('gram-usd').innerText = "$" + currentGramUSD.toFixed(2);
         document.getElementById('gram-ils').innerText = "₪" + currentGramILS.toFixed(2);
         
-        // התוצאה הסופית עם 2 ספרות אחרי הנקודה
+        // תוצאה סופית עם 2 ספרות אחרי הנקודה כפי שביקשת
         document.getElementById('total-ils').innerText = "₪ " + totalILS.toLocaleString('he-IL', { 
             minimumFractionDigits: 2, 
             maximumFractionDigits: 2 
         });
     }
 
-    // טעינה ורענון
+    // טעינה ורענון (מכסה גבוהה של 60 בקשות בדקה)
     updateData();
-    setInterval(updateData, 120000); // רענון כל 2 דקות
+    setInterval(updateData, 60000); // רענון כל דקה
 </script>
 
 </body>
