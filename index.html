@@ -39,26 +39,38 @@
 
         h1 { color: var(--gold); font-size: 24px; text-align: center; margin: 0 0 30px 0; font-weight: 300; letter-spacing: 2px; text-transform: uppercase; }
 
-        .input-group { margin-bottom: 22px; }
+        .input-group { margin-bottom: 22px; position: relative; }
         label { display: block; font-size: 14px; color: var(--gold); margin-bottom: 10px; font-weight: 600; }
 
-        /* תיקון צבעים לתיבות הקלט והבחירה */
+        /* תיקון צבע טקסט ללבן והוספת עיצוב פרימיום */
         input, select {
             width: 100%; padding: 16px;
-            background: #2a2a2a; /* צבע כהה קבוע במקום שקיפות למניעת בעיות תצוגה */
+            background: #2a2a2a; 
             border: 1px solid #444; border-radius: 15px;
-            color: black; font-size: 18px; outline: none;
+            color: #ffffff; /* טקסט לבן לקריאות מקסימלית */
+            font-size: 18px; outline: none;
             transition: all 0.3s ease; box-sizing: border-box;
-            appearance: none; -webkit-appearance: none; /* מסיר עיצוב ברירת מחדל של דפדפנים */
+            appearance: none; -webkit-appearance: none;
         }
 
-        /* כאן התיקון הקריטי לצבע הלבן ברשימה */
-        select option {
-            background-color: #1a1a1a;
-            color: white;
+        /* הוספת חץ בחירה מעוצב לתיבת הקראט */
+        .select-wrapper { position: relative; }
+        .select-wrapper::after {
+            content: '▼';
+            font-size: 12px;
+            color: var(--gold);
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
         }
 
-        input:focus, select:focus { border-color: var(--gold-bright); background: #333; }
+        /* אפקט מעבר לתיבות */
+        input:hover, select:hover { border-color: #666; }
+        input:focus, select:focus { border-color: var(--gold-bright); background: #333; box-shadow: 0 0 8px rgba(212, 175, 55, 0.2); }
+
+        select option { background-color: #1a1a1a; color: white; }
 
         .result-panel {
             background: rgba(0, 0, 0, 0.4); border-radius: 20px;
@@ -102,15 +114,17 @@
 
         <div class="input-group">
             <label>סוג הזהב (קראט):</label>
-            <select id="purity" onchange="calculate()">
-                <option value="1">24 קראט (999.9)</option>
-                <option value="0.916">22 קראט (916)</option>
-                <option value="0.900">זהב 900</option>
-                <option value="0.800">זהב 800</option>
-                <option value="0.750">18 קראט (750)</option>
-                <option value="0.585">14 קראט (585)</option>
-                <option value="0.375">9 קראט (375)</option>
-            </select>
+            <div class="select-wrapper">
+                <select id="purity" onchange="calculate()">
+                    <option value="1">24 קראט (999.9)</option>
+                    <option value="0.916">22 קראט (916)</option>
+                    <option value="0.900">זהב 900</option>
+                    <option value="0.800">זהב 800</option>
+                    <option value="0.750">18 קראט (750)</option>
+                    <option value="0.585">14 קראט (585)</option>
+                    <option value="0.375">9 קראט (375)</option>
+                </select>
+            </div>
         </div>
 
         <div class="result-panel">
@@ -135,7 +149,6 @@
 
     async function updateData() {
         try {
-            // שימוש ב-API של CoinGecko למקסימום יציבות
             const [goldRes, rateRes] = await Promise.all([
                 fetch('https://api.coingecko.com/api/v3/simple/price?ids=pax-gold&vs_currencies=usd'),
                 fetch('https://api.frankfurter.app/latest?from=USD&to=ILS')
