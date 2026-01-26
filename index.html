@@ -38,54 +38,43 @@
 
         h1 { color: var(--gold); font-size: 24px; text-align: center; margin: 0 0 30px 0; font-weight: 300; letter-spacing: 2px; text-transform: uppercase; }
 
-        .input-group { margin-bottom: 22px; }
+        .input-group { margin-bottom: 22px; position: relative; }
         label { display: block; font-size: 14px; color: var(--gold); margin-bottom: 10px; font-weight: 600; }
 
-        /* עיצוב תיבות הקלט */
+        /* עיצוב תיבות הקלט - טקסט לבן וברור */
         input, select {
             width: 100%; padding: 16px;
             background: #2a2a2a; 
             border: 1px solid #444; border-radius: 15px;
             color: #ffffff !important; /* טקסט לבן */
-            font-size: 22px; outline: none;
+            font-size: 20px; outline: none;
             transition: all 0.3s ease; box-sizing: border-box;
             appearance: none; -webkit-appearance: none;
             text-align: center;
             font-weight: bold;
         }
 
-        /* כפתורי זהב בולטים למשקל */
-        .controls-container {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
+        /* כפתורי שליטה זהובים למשקל */
+        .controls-container { display: flex; align-items: center; gap: 10px; }
         .step-btn {
-            background: var(--gold); /* כפתור זהב מלא */
-            border: none;
-            color: #000000; /* טקסט שחור לניגודיות */
-            width: 60px; height: 60px; /* כפתורים גדולים */
+            background: #1a1a1a;
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            width: 55px; height: 55px;
             border-radius: 15px;
-            font-size: 30px;
-            font-weight: bold;
+            font-size: 28px;
             cursor: pointer;
             display: flex; align-items: center; justify-content: center;
-            transition: transform 0.1s;
-            box-shadow: 0 4px 10px rgba(212, 175, 55, 0.3);
+            transition: 0.2s;
         }
+        .step-btn:active { background: var(--gold); color: black; }
 
-        .step-btn:active { transform: scale(0.95); background: var(--gold-bright); }
-
-        /* הסתרת חיצי דפדפן */
-        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-
-        /* חץ זהב לתיבת הקראט */
+        /* חץ זהב מעוצב לתיבת הקראט */
         .select-wrapper { position: relative; width: 100%; }
         .select-wrapper::after {
             content: '▼';
-            font-size: 14px; color: var(--gold);
-            position: absolute; left: 20px; top: 50%;
+            font-size: 12px; color: var(--gold);
+            position: absolute; left: 15px; top: 50%;
             transform: translateY(-50%); pointer-events: none;
         }
 
@@ -162,58 +151,46 @@
             </div>
         </div>
         
-        <div id="status" class="status-bar">מתחבר ל-API (ללא ערכים שמורים)...</div>
+        <div id="status" class="status-bar">מתחבר לנתונים חיים...</div>
     </div>
 
     <div class="footer">© GOLDSILVER GLOBAL LTD</div>
 
 <script>
-    // אתחול ל-0 מוחלט, ללא שום מספר שמור מראש!
     let market = { ozUSD: 0, rateILS: 0 };
 
-    // פונקציה לשינוי משקל בכפתורי הזהב
     function changeWeight(amount) {
         const weightInput = document.getElementById('weight');
         let current = parseFloat(weightInput.value || 0);
-        
-        // הוספה או הפחתה של 1 בדיוק
         let updated = current + amount;
-        
-        // מניעת ירידה מתחת לאפס
         if (updated < 0) updated = 0;
-        
         weightInput.value = updated.toFixed(2);
         calculate();
     }
 
     async function updateData() {
         try {
-            // משיכה מה-API בלבד
-            const [goldRes, rateRes] = await Promise.all([
-                fetch('https://api.coingecko.com/api/v3/simple/price?ids=pax-gold&vs_currencies=usd'),
-                fetch('https://api.frankfurter.app/latest?from=USD&to=ILS')
-            ]);
-            const goldData = await goldRes.json();
-            const rateData = await rateRes.json();
+            // משיכה אחת חכמה: מחיר זהב בדולר ובשקל מאותו מקור
+            const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=pax-gold&vs_currencies=usd,ils');
+            const data = await response.json();
 
-            // עדכון רק אם ה-API החזיר תשובה אמתית
-            if (goldData['pax-gold'] && rateData.rates.ILS) {
-                market.ozUSD = goldData['pax-gold'].usd;
-                market.rateILS = rateData.rates.ILS;
-                document.getElementById('status').innerText = "נתונים התקבלו מה-API בהצלחה ✅";
+            if (data['pax-gold']) {
+                market.ozUSD = data['pax-gold'].usd;
+                const ozILS = data['pax-gold'].ils;
+                
+                // חישוב שער הדולר מתוך היחס בין הזהב בשקל לזהב בדולר
+                market.rateILS = ozILS / market.ozUSD;
+
+                document.getElementById('status').innerText = "בורסה מעודכנת ✅ " + new Date().toLocaleTimeString();
                 calculate();
-            } else {
-                document.getElementById('status').innerText = "ממתין לנתוני API...";
             }
         } catch (e) {
-            document.getElementById('status').innerText = "שגיאת תקשורת עם ה-API.";
+            document.getElementById('status').innerText = "שגיאת חיבור. נסה לרענן.";
         }
     }
 
     function calculate() {
-        // אם אין נתונים מה-API, לא מציגים כלום (נשאר --)
         if (market.ozUSD === 0 || market.rateILS === 0) return;
-        
         const weight = parseFloat(document.getElementById('weight').value) || 0;
         const purity = parseFloat(document.getElementById('purity').value);
         
