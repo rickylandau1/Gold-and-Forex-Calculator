@@ -115,38 +115,37 @@
             </div>
         </div>
         
-        <div id="status" class="status-bar">מתחבר לבורסה בזמן אמת...</div>
+        <div id="status" class="status-bar">טוען נתוני בורסה...</div>
     </div>
 
     <div class="footer">© GOLDSILVER GLOBAL LTD</div>
 
 <script>
-    // שימוש במפתח ה-Finnhub האישי שלך
-    const FINNHUB_KEY = "d5rrv99r01qj5oilp6tgd5rrv99r01qj5oilp6u0";
     let market = { ozUSD: 0, rateILS: 0 };
 
     async function updateData() {
         try {
-            // קריאה לשני מקורות הנתונים במקביל למהירות שיא
+            // קריאה במקביל ל-Binance (זהב) ול-Frankfurter (דולר)
+            // Binance PAXG/USDT עוקב בדיוק אחרי אונקיית זהב
             const [goldRes, rateRes] = await Promise.all([
-                fetch(`https://finnhub.io/api/v1/quote?symbol=OANDA:XAU_USD&token=${FINNHUB_KEY}`),
+                fetch(`https://api.binance.com/api/v3/ticker/price?symbol=PAXGUSDT`),
                 fetch('https://api.frankfurter.app/latest?from=USD&to=ILS')
             ]);
 
             const gJson = await goldRes.json();
             const rJson = await rateRes.json();
 
-            // בדיקה שהנתונים הגיעו (זהב סביב $5,040, דולר סביב 3.1360)
-            if (gJson.c && rJson.rates.ILS) {
-                market.ozUSD = gJson.c;
+            // ב-2026 הזהב מעל 5,000$ והדולר סביב 3.136
+            if (gJson.price && rJson.rates.ILS) {
+                market.ozUSD = parseFloat(gJson.price);
                 market.rateILS = rJson.rates.ILS;
                 document.getElementById('status').innerText = "בורסה מעודכנת ✅ " + new Date().toLocaleTimeString();
                 calculate();
             } else {
-                document.getElementById('status').innerText = "ממתין לתגובה מהבורסה...";
+                document.getElementById('status').innerText = "ממתין לתגובה מהשרת...";
             }
         } catch (e) {
-            document.getElementById('status').innerText = "שגיאת חיבור ל-API.";
+            document.getElementById('status').innerText = "שגיאת חיבור. ודא חיבור אינטרנט.";
         }
     }
 
@@ -172,7 +171,7 @@
     }
 
     updateData();
-    setInterval(updateData, 60000); // רענון מהיר כל דקה
+    setInterval(updateData, 60000); 
 </script>
 </body>
 </html>
